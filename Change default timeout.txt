@@ -1,0 +1,9 @@
+C:\ProgramData\Anaconda3\lib\site-packages\seabreeze\pyseabreeze\features\spectrometer.py
+
+changed timeout in 
+def _get_spectrum_raw(self):
+
+C:\ProgramData\Anaconda3\lib\site-packages\seabreeze\pyseabreeze\transport.py
+
+def default_timeout_ms(self):
+ return 20000
