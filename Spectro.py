@@ -11,6 +11,7 @@ from seabreeze.spectrometers import Spectrometer, list_devices
 # import matplotlib.pyplot as plt
 # import time
 import numpy as np
+import datetime
 
 # print(list_devices())
 # devices=list_devices()
@@ -32,9 +33,9 @@ def init_spectrometer():
     spec=Spectrometer(devices[0])
     # spec=Spectrometer.from_serial_number('HDX01068')
     
-    spec.integration_time_micros(6000)
+    spec.integration_time_micros(int(200e3))
     # External trigger rising edge
-    spec.trigger_mode(0)
+    spec.trigger_mode(1)
     if 'spec' in locals():
         return spec
     else:
@@ -43,10 +44,13 @@ def init_spectrometer():
     
 def main_spectrometer(spec):
     global w, i
-    w=spec.wavelengths()    
-    i=spec.intensities()
-    print(i)
-    return i
+    w=spec.wavelengths()
+    while True:    
+        
+        i=spec.intensities()
+        print(datetime.datetime.now())
+        s=np.sum(i[392:593])
+        print(s)
         
 def close_spectrometer(spec):
     spec.close()
@@ -60,8 +64,7 @@ spec = init_spectrometer()
 
 try:        
     if spec is not None:
-        while True:
-            i = main_spectrometer(spec)
+        main_spectrometer(spec)
         close_spectrometer(spec)
 
 except KeyboardInterrupt:
