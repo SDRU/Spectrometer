@@ -1,0 +1,68 @@
+
+
+- Add acquisition delay commands into msgs in
+- c:\ProgramData\Anaconda3\Lib\site-packages\seabreeze\pyseabreeze\protocol.py
+
+class OBPProtocol(ProtocolInterface):
+
+    msgs = {
+        code: struct.Struct(msg).pack
+        for code, msg in {
+            0x00000100: "",  # GET_SERIAL
+            0x00000101: "",  # GET_SERIAL_LENGTH
+            0x00100928: "",  # GET_BUF_SPEC32_META
+            0x00101000: "",  # GET_RAW_SPECTRUM_NOW_HDX
+            0x00101100: "",  # GET_RAW_SPECTRUM_NOW
+            0x00110010: "<L",  # SET_ITIME_USEC
+            0x00110110: "<B",  # SET_TRIG_MODE
+            0x00180100: "",  # GET_WL_COEFF_COUNT
+            0x00180101: "<B",  # GET_WL_COEFF
+            0x00181100: "",  # GET_NL_COEFF_COUNT
+            0x00181101: "<B",  # GET_NL_COEFF
+            0x00420004: "",  # GET_TE_TEMPERATURE
+            0x00420010: "<B",  # SET_TE_ENABLE
+            0x00420011: "<f",  # SET_TE_SETPOINT
+            0x00110500: "",   # GET ACQ DELAY
+            0x00110501: "",   # GET MIN ACQ DELAY
+            0x00110502: "",   # GET MAX ACQ DELAY
+            0x00110503: "",   # GET STEP ACQ DELAY
+            0x00110510: "<L",   # SET ACQ DELAY            
+        }.items()
+    }  
+
+
+- Add functions to class SeaBreezeSpectrometerFeatureOBP
+- c:\ProgramData\Anaconda3\Lib\site-packages\seabreeze\pyseabreeze\features\spectrometer.py
+
+    def get_acq_delay(self):
+        """
+        Returns acquisition delay in microseconds
+
+        """
+        
+        delay = struct.unpack("<i",self.protocol.query(0x00110500))
+        return delay[0]
+    
+    def get_acq_delay_limits(self):
+        """
+        Returns acquisition delay limits as a tuple (min, max, step) in microseconds
+        """
+        dmin = struct.unpack("<L",self.protocol.query(0x00110501))
+        dmax = struct.unpack("<L",self.protocol.query(0x00110502))
+        dstep = struct.unpack("<L",self.protocol.query(0x00110503))
+
+        return (dmin[0], dmax[0], dstep[0])
+
+    def set_acq_delay(self,delay):
+        """
+        Set acquisition delay
+        INPUT: delay in microseconds
+
+        """
+        return self.protocol.send(0x00110510,int(delay))
+
+
+- Call functions from your Python code
+
+spec=Spectrometer(devices[0])
+spec.f.spectrometer.set_acq_delay(2000)
