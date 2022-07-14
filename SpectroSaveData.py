@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Jul 15 14:52:01 2021
+Created on Thu Jun  9 11:45:33 2022
 
-@author: Sandora
+@author: Sandra Drusova
+
+Save data from Ocean Optix HDX spectrometer with a custom format
 """
 
 import seabreeze
@@ -11,18 +13,15 @@ from seabreeze.spectrometers import Spectrometer, list_devices
 import numpy as np
 import datetime
 from usb.core import USBTimeoutError
+import time
 
-# print(list_devices())
-# devices=list_devices()
-# spec=Spectrometer(devices[0])
 
-# api=seabreeze.pyseabreeze.SeaBreezeAPI()
-# print(api.supported_models())
-# devices=api.list_devices()
-# s=devices[0]
-# s.open()
-# print(s.get_serial_number())
-
+# number of laser pulses
+nr_pulses = 50
+save_file = 1
+folder = 'C:/Users/Hamed/Desktop/Sandra/'
+# Add tissue type in the filename if needed 
+filename_base = time.strftime("%Y%m%d-%H%M%S") + '-Meat' 
 
 
 def init_spectrometer():
@@ -33,13 +32,14 @@ def init_spectrometer():
     spec=Spectrometer(devices[0])
     # spec=Spectrometer.from_serial_number('HDX01068')
     
-    spec.integration_time_micros(int(200e3))
+    spec.integration_time_micros(int(6e3))
     
     # External trigger: software 0, rising edge 1
-    spec.trigger_mode(0)
-    
-    spec.f.spectrometer.set_acq_delay(1000)
-    print(spec.f.spectrometer.get_acq_delay())
+    spec.trigger_mode(1)
+
+    # Set acquisition delay in microseconds. Doesn't work.
+    # spec.f.spectrometer.set_acq_delay(1)
+    # print(spec.f.spectrometer.get_acq_delay())
     
     if 'spec' in locals():
         return spec
@@ -49,18 +49,28 @@ def init_spectrometer():
     
 def main_spectrometer(spec):
     
-    global w, i
+    global w, i, Spectra
     w=spec.wavelengths()
-    while True:    
+    
+    Spectra = np.zeros([w.shape[0],nr_pulses+1])
+    Spectra[:,0] = w
+    
+    for i in range(nr_pulses):  
         
-        i=spec.intensities()
+        Spectra[:,i+1] = spec.intensities()
         print(datetime.datetime.now())
-        s=np.sum(i[392:593])
-        print(s)
-
         
+        
+    if save_file == 1:
+        filename = folder + filename_base + '.txt'
+        with open(filename,'a') as f:
+            np.savetxt(f,Spectra, delimiter='\t',fmt='%6.2f')
+            print('saved')
+            
+            
 def close_spectrometer(spec):
-    spec.close()
+    spec.close()    
+    
     
 
 spec = init_spectrometer()
@@ -78,8 +88,9 @@ except KeyboardInterrupt:
 except USBTimeoutError:
     print('Timeout')
     
-except:
+except Exception as e:
     spec.close()
     print('I closed the connection for some reason')
+    print(str(e))
 
 
